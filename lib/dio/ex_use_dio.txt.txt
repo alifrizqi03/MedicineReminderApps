@@ -1,0 +1,56 @@
+void execLogin(String email, String password) async {
+    Dio dio = Dio();
+    DioClient dioClient = DioClient(dio);
+    AuthApi authApi = AuthApi(dioClient: dioClient);
+    AuthRepository repo = AuthRepository(authApi: authApi);
+    try {
+      AlertDialog alert = AlertDialog(
+        content: Row(children: [
+          const CircularProgressIndicator(
+            backgroundColor: Colors.red,
+          ),
+          Container(
+              margin: const EdgeInsets.only(left: 7),
+              child: const Text("Loading...")),
+        ]),
+      );
+      showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        },
+      );
+      ModelAuth logins = await repo.loginReq(email, password);
+      String getName = await repo.meReq(logins.access_token);
+      final prefs = await SharedPreferences.getInstance();
+      Navigator.pop(context);
+      prefs.setString("token", logins.access_token);
+      prefs.setString("name", getName);
+      Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => HomePage(
+              nama: getName,
+            ),
+          ),
+          (Route<dynamic> route) => false);
+    } catch (e) {
+      Navigator.pop(context);
+      showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text("Login Failed"),
+              content: const Text("Email atau password tidak ditemukan!!"),
+              actions: <Widget>[
+                FlatButton(
+                  child: const Text("OK"),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              ],
+            );
+          });
+    }
+  }
